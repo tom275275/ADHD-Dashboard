@@ -36,6 +36,9 @@ export function useSpeechRecognition() {
 
       recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          alert('Microphone access denied. Please enable microphone permissions in your browser settings for this site.');
+        }
         setIsListening(false);
       };
 

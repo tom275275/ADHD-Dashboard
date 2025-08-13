@@ -87,9 +87,32 @@ Brain Dump: "${brainDump}"
 
     } catch (parseError) {
       console.error('Failed to parse Gemini response:', text);
+      
+      // Try to extract JSON from markdown code blocks
+      const jsonMatch = text.match(/```(?:json)?\s*(\[[\s\S]*?\])\s*```/);
+      if (jsonMatch) {
+        try {
+          const tasks = JSON.parse(jsonMatch[1]);
+          if (Array.isArray(tasks)) {
+            const validatedTasks = tasks.filter(task => {
+              return task.content && 
+                     task.category && 
+                     task.urgency && 
+                     task.energy_level &&
+                     ['Do It Now', 'Focus', 'Productive Procrastination', 'Easy Wins'].includes(task.category) &&
+                     ['urgent', 'not_urgent'].includes(task.urgency) &&
+                     ['high', 'low'].includes(task.energy_level);
+            });
+            return res.status(200).json({ tasks: validatedTasks });
+          }
+        } catch (secondParseError) {
+          // Fall through to error response
+        }
+      }
+      
       return res.status(500).json({ 
         error: 'Failed to parse AI response',
-        debug: process.env.NODE_ENV === 'development' ? text : undefined
+        debug: text.substring(0, 500) // Show first 500 chars for debugging
       });
     }
 
